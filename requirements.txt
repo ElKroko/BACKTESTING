@@ -5,3 +5,4 @@ ta
 matplotlib
 reportlab
 mplfinance
+plotly
