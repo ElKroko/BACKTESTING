@@ -6,3 +6,6 @@ matplotlib
 reportlab
 mplfinance
 plotly
+numpy
+scipy
+pillow

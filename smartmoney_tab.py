@@ -43,6 +43,10 @@ def render_smart_money():
         df = get_data(symbol, interval)
         st.subheader(title)
 
+        if df.empty:
+            st.warning(f"No data available for {title} ({interval}). Skipping visualization.")
+            continue
+
         obs   = detect_order_blocks(df)
         gaps  = detect_fvg(df)
         pools = detect_liquidity_pools(df)
