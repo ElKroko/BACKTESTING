@@ -1,0 +1,36 @@
+/* Styles for backtest summary section */
+
+.backtest-summary {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 15px;
+    margin-bottom: 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+
+.summary-item {
+    display: flex;
+    align-items: center;
+    margin: 5px 10px;
+}
+
+.summary-icon {
+    font-size: 1.2rem;
+    margin-right: 8px;
+    width: 24px;
+    text-align: center;
+}
+
+.summary-label {
+    font-size: 0.8rem;
+    opacity: 0.8;
+    margin-right: 4px;
+}
+
+.summary-value {
+    font-weight: bold;
+    font-size: 0.9rem;
+}

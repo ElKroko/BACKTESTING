@@ -1,0 +1,94 @@
+/* Main theme styles for the application */
+
+/* Main background and text colors */
+.stApp {
+    background-color: var(--background);
+    color: var(--text);
+}
+
+/* Active tab indicator */
+.stTabs [aria-selected="true"] {
+    background-color: var(--accent) !important;
+    color: white !important;
+}
+
+/* Tab hover */
+.stTabs [role="tab"]:hover {
+    background-color: var(--accent-transparent) !important;
+    color: white !important;
+}
+
+/* Containers, cards, expanders */
+.stExpander, div.block-container {
+    border-color: var(--border) !important;
+}
+
+/* Button colors */
+.stButton>button {
+    background-color: var(--accent);
+    color: white;
+}
+
+.stButton>button:hover {
+    background-color: var(--accent-hover);
+}
+
+/* Metric text and background */
+[data-testid="stMetricLabel"] {
+    color: var(--metric-text) !important;
+}
+
+[data-testid="stMetricValue"] {
+    color: var(--metric-value) !important;
+    background-color: var(--metric-bg) !important;
+    padding: 5px !important;
+    border-radius: 5px !important;
+}
+
+/* Sidebar */
+[data-testid="stSidebar"] {
+    background-color: var(--secondary);
+}
+
+/* Table header */
+thead tr th {
+    background-color: var(--table-header-bg) !important;
+    color: var(--table-text) !important;
+}
+
+tbody tr {
+    background-color: var(--table-bg) !important;
+    color: var(--table-text) !important;
+}
+
+/* DataFrames and tables */
+.stDataFrame {
+    border-color: var(--border) !important;
+}
+
+/* Input elements */
+.stSelectbox label, .stTextInput label, .stNumberInput label, .stDateInput label {
+    color: var(--text) !important;
+}
+
+/* Plot and chart backgrounds */
+.js-plotly-plot, .plotly, .js-plotly-plot .plot-container .svg-container {
+    background-color: var(--chart-bg) !important;
+}
+
+/* Headers */
+h1, h2, h3, h4, h5, h6 {
+    color: var(--text) !important;
+}
+
+/* Expander content */
+.streamlit-expanderContent {
+    background-color: var(--secondary) !important;
+    color: var(--text) !important;
+}
+
+/* Warning messages */
+.stAlert {
+    background-color: var(--secondary) !important;
+    color: var(--text) !important;
+}

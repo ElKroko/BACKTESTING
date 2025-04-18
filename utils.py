@@ -17,7 +17,7 @@ def tooltip(label, explanation, icon="ℹ️"):
     tooltip_id = label.lower().replace(" ", "_").replace("&", "").replace(":", "") + "_tip"
     
     return f"""
-    <div style="display: inline-flex; align-items: center; gap: 0.4rem;">
+    <div class="tooltip-wrapper" style="display: inline-flex; align-items: center; gap: 0.4rem;">
         <span>{label}</span>
         <span class="tooltip" id="{tooltip_id}">
             {icon}
