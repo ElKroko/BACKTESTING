@@ -1,0 +1,27 @@
+# Exclude Python cache files and folders
+__pycache__/
+*.pyc
+
+# Exclude Jupyter Notebook checkpoints
+.ipynb_checkpoints/
+
+# Exclude system files
+.DS_Store
+Thumbs.db
+
+# Exclude virtual environments
+venv/
+.env/
+
+# Exclude logs and temporary files
+*.log
+*.tmp
+
+# Exclude compiled files
+*.so
+*.dll
+*.exe
+
+# Exclude IDE-specific files
+.vscode/
+.idea/
