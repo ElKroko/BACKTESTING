@@ -99,7 +99,12 @@ def run_backtest(symbol, interval, strategy_fn, initial_cash,
 
 # --- Streamlit UI ---
 def render_backtests():
-    st.header('🔄 Backtesting Engine')
+    # Importamos tooltip desde utils en lugar de container para evitar importación circular
+    from utils import tooltip
+    
+    st.markdown(tooltip('🔄 Backtesting Engine', 
+                      'El backtesting te permite probar estrategias de trading utilizando datos históricos para simular operaciones y evaluar su rendimiento. Ayuda a perfeccionar estrategias antes de usar dinero real.'),
+               unsafe_allow_html=True)
     
     # Inicializar variables de estado en session_state si no existen
     if 'bt_metrics' not in st.session_state:
@@ -135,20 +140,25 @@ def render_backtests():
         col1, col2, col3 = form.columns(3)
         
         with col1:
-            symbol = st.text_input('Symbol', 'BTCUSDT', key='bt_symbol').strip().upper()
-            interval = st.selectbox('Timeframe', ['1m','5m','15m','1h','4h','1d'], key='bt_interval')
-            strategy_name = st.selectbox('Strategy',
-                ['MA Crossover','Bollinger Breakout','RSI Reversion','MACD Momentum','SR Breakout'],
-                key='bt_strategy')
+            symbol = st.text_input('Symbol', value='BTCUSDT', key='bt_symbol').strip().upper()
+            interval = st.selectbox('Timeframe', options=['1m','5m','15m','1h','4h','1d'], key='bt_interval')
+            strategy_name = st.selectbox('Strategy', 
+                                       options=['MA Crossover','Bollinger Breakout','RSI Reversion',
+                                               'MACD Momentum','SR Breakout'],
+                                       key='bt_strategy',
+                                       help="MA Crossover: Cruces de medias móviles. Bollinger: Ruptura de bandas. RSI: Sobrecompra/sobreventa. MACD: Momentum. SR: Soporte/Resistencia.")
         
         with col2:
             start_date = st.date_input('Start Date', value=default_start, key='bt_start')
             end_date = st.date_input('End Date', value=today, key='bt_end')
         
         with col3:
-            initial_cash = st.number_input('Initial Capital (USD)', min_value=100.0, value=10000.0, step=100.0, key='bt_cash')
-            commission = st.number_input('Commission (%)', min_value=0.0, max_value=1.0, value=0.1, step=0.01, key='bt_commission')
-            slippage = st.number_input('Slippage (%)', min_value=0.0, max_value=1.0, value=0.05, step=0.01, key='bt_slippage')
+            initial_cash = st.number_input('Initial Capital (USD)', 
+                                         min_value=100.0, value=10000.0, step=100.0, key='bt_cash')
+            commission = st.number_input('Commission (%)', 
+                                       min_value=0.0, max_value=1.0, value=0.1, step=0.01, key='bt_commission')
+            slippage = st.number_input('Slippage (%)', 
+                                     min_value=0.0, max_value=1.0, value=0.05, step=0.01, key='bt_slippage')
         
         run = form.form_submit_button('Run Backtest')
 
@@ -293,7 +303,10 @@ def render_backtests():
     with res_left:
         
         # Interactive equity curve
-        st.subheader('Equity Curve')
+        st.markdown(tooltip('Equity Curve', 
+                           'La curva de capital muestra la evolución de tu inversión a lo largo del tiempo. Una curva ascendente indica rentabilidad, mientras que las caídas representan pérdidas.'),
+                  unsafe_allow_html=True)
+        
         if not st.session_state.bt_eq_df.empty:
             df_plot = st.session_state.bt_eq_df.reset_index()
             if 'timestamp' not in df_plot.columns and 'index' in df_plot.columns:
@@ -324,7 +337,10 @@ def render_backtests():
         else:
             st.warning('No equity data available to plot.')
             
-        st.subheader('📊 Performance Metrics & Equity Curve')
+        st.markdown(tooltip('📊 Performance Metrics', 
+                           'Métricas clave que resumen el rendimiento de tu estrategia. Incluyen rentabilidad, drawdown (caída máxima), ratio de Sharpe (rentabilidad ajustada al riesgo) y estadísticas de operaciones.'),
+                   unsafe_allow_html=True)
+        
         # Metrics
         mcols = st.columns(4)
         for i, (name, val) in enumerate(st.session_state.bt_metrics.items()):
@@ -332,7 +348,10 @@ def render_backtests():
         
 
     with res_right:
-        st.subheader('📝 Price Action & Trade Entries/Exits')
+        st.markdown(tooltip('📝 Price Action & Trade Entries/Exits', 
+                           'Gráfico de precios con marcadores que indican los puntos de entrada y salida de tus operaciones. Te permite visualizar cuándo tu estrategia entró y salió del mercado.'),
+                   unsafe_allow_html=True)
+        
         if not st.session_state.bt_price_df.empty:
             fig_price = go.Figure(
                 data=[
@@ -385,7 +404,10 @@ def render_backtests():
         else:
             st.warning('No price data available.')
         
-        st.subheader('📝 Trade Results')
+        st.markdown(tooltip('📝 Trade Results', 
+                           'Tabla detallada de todas las operaciones realizadas. Incluye precios de entrada y salida, resultado (PnL - Profit and Loss) y fechas de cada operación.'),
+                   unsafe_allow_html=True)
+        
         if not st.session_state.bt_trades_df.empty:
             st.dataframe(st.session_state.bt_trades_df)
         else:

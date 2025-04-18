@@ -1,18 +1,20 @@
 # container.py
 import streamlit as st
-import config
-from analysis_tab import render_analysis
-from backtest_tab import render_backtests
-from smartmoney_tab import render_smart_money
-from leveraged_backtest import render_leveraged_backtest
 
 # --- Page configuration ---
+# This MUST be the first Streamlit command
 st.set_page_config(
     page_title='Crypto Backtesting App',
     page_icon='💹',
     layout='wide',
     initial_sidebar_state='collapsed'
 )
+
+import config
+from analysis_tab import render_analysis
+from smartmoney_tab import render_smart_money
+# Importamos los utilitarios
+from utils import tooltip, apply_tooltip_css
 
 # --- Top navbar: title + palette selector ---
 bar = st.container()
@@ -135,6 +137,9 @@ def apply_custom_css(palette):
 # Apply the CSS for the selected palette
 apply_custom_css(config.PALETTE)
 
+# Aplicar el CSS para los tooltips
+apply_tooltip_css()
+
 # --- Main tabs ---
 tabs = st.tabs([
     '📊 Analysis',
@@ -147,10 +152,14 @@ with tabs[0]:
     render_analysis()
 
 with tabs[1]:
+    # Importar aquí para evitar importación circular
+    from backtest_tab import render_backtests
     render_backtests()
     
 with tabs[2]:
-    render_leveraged_backtest()
+    # Importar aquí para evitar importación circular
+    from leveraged_backtest import render_leveraged_backtest
+    render_leveraged_backtest(tooltip_func=tooltip)
 
 with tabs[3]:
     render_smart_money()

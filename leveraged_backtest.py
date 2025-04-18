@@ -511,8 +511,19 @@ def calculate_leveraged_metrics(equity_series, trade_results, funding_df, liquid
     }
 
 # --- Streamlit UI component ---
-def render_leveraged_backtest():
-    st.header('🔄 Leveraged Backtesting')
+def render_leveraged_backtest(tooltip_func=None):
+    """
+    Render the leveraged backtest UI component
+    
+    Args:
+        tooltip_func: Function to create tooltips (passed from container.py to avoid circular imports)
+    """
+    # Use tooltip_func if provided, otherwise create a simple version
+    tooltip = tooltip_func if tooltip_func else lambda title, content: f"<span title='{content}'>{title}</span>"
+    
+    st.markdown(tooltip("🔄 Leveraged Backtesting", 
+                      "El backtesting apalancado simula operaciones de trading con apalancamiento, donde utilizas más capital del que tienes disponible. Incluye simulación de liquidaciones y pagos de funding rate para reflejar condiciones reales de mercado."), 
+                unsafe_allow_html=True)
     
     # Initialize session state variables if they don't exist
     if 'lev_metrics' not in st.session_state:
@@ -552,11 +563,13 @@ def render_leveraged_backtest():
         col1, col2, col3 = form.columns(3)
         
         with col1:
-            symbol = st.text_input('Symbol', 'BTCUSDT', key='lev_symbol').strip().upper()
-            interval = st.selectbox('Timeframe', ['1m','5m','15m','1h','4h','1d'], key='lev_interval')
-            strategy_name = st.selectbox('Strategy',
-                ['MA Crossover','Bollinger Breakout','RSI Reversion','MACD Momentum','SR Breakout'],
-                key='lev_strategy')
+            symbol = st.text_input('Symbol', value='BTCUSDT', key='lev_symbol').strip().upper()
+            interval = st.selectbox('Timeframe', options=['1m','5m','15m','1h','4h','1d'], key='lev_interval')
+            strategy_name = st.selectbox('Strategy', 
+                                       options=['MA Crossover','Bollinger Breakout','RSI Reversion',
+                                               'MACD Momentum','SR Breakout'],
+                                       key='lev_strategy',
+                                       help="MA Crossover: Cruces de medias móviles. Bollinger: Ruptura de bandas. RSI: Sobrecompra/sobreventa. MACD: Momentum. SR: Soporte/Resistencia.")
         
         with col2:
             start_date = st.date_input('Start Date', value=default_start, key='lev_start')
@@ -730,7 +743,9 @@ def render_leveraged_backtest():
     metrics_section, chart_section = st.columns(2)
     
     with metrics_section:
-        st.subheader('📊 Performance Metrics')
+        st.markdown(tooltip('📊 Performance Metrics', 
+                           'Métricas clave que resumen el rendimiento de tu estrategia. Incluyen rentabilidad, drawdown (caída máxima), ratio de Sharpe (rentabilidad ajustada al riesgo) y estadísticas de operaciones.'), 
+                    unsafe_allow_html=True)
         
         # Display metrics in a grid
         mcols = st.columns(3)
@@ -739,7 +754,9 @@ def render_leveraged_backtest():
         
         # Display funding impacts table if available
         if not st.session_state.lev_funding_df.empty:
-            st.subheader('💰 Funding Impacts')
+            st.markdown(tooltip('💰 Funding Impacts', 
+                               'Resumen de los pagos de funding rate. Los mercados de futuros perpetuos utilizan pagos periódicos (funding) para mantener el precio del contrato cerca del mercado spot.'), 
+                       unsafe_allow_html=True)
             
             # Group funding by day and position type for summary
             funding_summary = st.session_state.lev_funding_df.copy()
@@ -754,7 +771,10 @@ def render_leveraged_backtest():
                 st.info("No funding payments in this period.")
         
         # Equity curve
-        st.subheader('💹 Equity Curve')
+        st.markdown(tooltip('💹 Equity Curve', 
+                           'Gráfico que muestra la evolución de tu capital a lo largo del tiempo. Una curva ascendente indica rentabilidad, mientras que las caídas representan pérdidas.'), 
+                   unsafe_allow_html=True)
+        
         if not st.session_state.lev_eq_df.empty:
             eq_df = st.session_state.lev_eq_df.reset_index()
             
@@ -835,7 +855,9 @@ def render_leveraged_backtest():
             st.warning('No equity data available to plot.')
     
     with chart_section:
-        st.subheader('📝 Price Chart & Trades')
+        st.markdown(tooltip('📝 Price Chart & Trades', 
+                           'Gráfico de precios con marcadores de entradas, salidas y niveles de liquidación. Te permite visualizar cuándo tu estrategia entró y salió del mercado.'), 
+                   unsafe_allow_html=True)
         
         # Create price chart with trades and liquidation levels
         if not st.session_state.lev_price_df.empty:
@@ -995,7 +1017,10 @@ def render_leveraged_backtest():
             st.warning('No price data available to plot.')
         
         # Trade results table
-        st.subheader('📝 Trade Results')
+        st.markdown(tooltip('📝 Trade Results', 
+                           'Tabla detallada de todas las operaciones realizadas. Incluye precios de entrada y salida, tipo de posición, apalancamiento usado, resultado (PnL) y si hubo liquidación.'), 
+                   unsafe_allow_html=True)
+        
         if not st.session_state.lev_trades_df.empty:
             # Add highlight for liquidated trades
             st.dataframe(st.session_state.lev_trades_df.style.apply(
