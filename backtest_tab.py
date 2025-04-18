@@ -291,11 +291,6 @@ def render_backtests():
     # Mostrar resultados del backtest
     res_left, res_right = st.columns(2)
     with res_left:
-        st.subheader('📊 Performance Metrics & Equity Curve')
-        # Metrics
-        mcols = st.columns(4)
-        for i, (name, val) in enumerate(st.session_state.bt_metrics.items()):
-            mcols[i % 4].metric(name, val)
         
         # Interactive equity curve
         st.subheader('Equity Curve')
@@ -328,6 +323,13 @@ def render_backtests():
             st.plotly_chart(fig_eq, use_container_width=True)
         else:
             st.warning('No equity data available to plot.')
+            
+        st.subheader('📊 Performance Metrics & Equity Curve')
+        # Metrics
+        mcols = st.columns(4)
+        for i, (name, val) in enumerate(st.session_state.bt_metrics.items()):
+            mcols[i % 4].metric(name, val)
+        
 
     with res_right:
         st.subheader('📝 Price Action & Trade Entries/Exits')

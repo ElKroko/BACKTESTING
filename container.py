@@ -4,6 +4,7 @@ import config
 from analysis_tab import render_analysis
 from backtest_tab import render_backtests
 from smartmoney_tab import render_smart_money
+from leveraged_backtest import render_leveraged_backtest
 
 # --- Page configuration ---
 st.set_page_config(
@@ -138,6 +139,7 @@ apply_custom_css(config.PALETTE)
 tabs = st.tabs([
     '📊 Analysis',
     '🔄 Backtests',
+    '📈 Leveraged Backtests',
     '💡 Smart Money Concepts'
 ])
 
@@ -146,6 +148,9 @@ with tabs[0]:
 
 with tabs[1]:
     render_backtests()
-
+    
 with tabs[2]:
+    render_leveraged_backtest()
+
+with tabs[3]:
     render_smart_money()
