@@ -244,8 +244,9 @@ def render_technical_indicators(data_dict):
     """
     st.markdown("### Semáforo de Indicadores")
     
-    # Preparamos la tabla de semáforos
+    # Preparamos la tabla de semáforos y almacenamos los scores para cálculos posteriores
     indicators_df = pd.DataFrame(columns=['Indicador'] + list(TIMEFRAMES.keys()) + ['Score'])
+    scores = []
     
     # Para cada indicador, calculamos su estado en cada timeframe
     for ind_key, ind_info in INDICATORS.items():
@@ -254,7 +255,7 @@ def render_technical_indicators(data_dict):
         
         for tf_key, tf_info in TIMEFRAMES.items():
             df = data_dict.get(tf_key, pd.DataFrame())
-            if not df.empty:
+            if not df.empty and len(df) > 1:  # Aseguramos que hay suficientes datos
                 last = df.iloc[-1]
                 
                 # Determinamos el estado del indicador
@@ -283,6 +284,9 @@ def render_technical_indicators(data_dict):
                         ind_score -= 1 * tf_info['weight']
                     else:
                         status = "🟡"  # Neutral
+                        # Añadir un pequeño sesgo basado en la dirección del RSI desde el nivel neutral (50)
+                        rsi_bias = (last['RSI'] - 50) / 20  # Normalizado entre -1 y 1
+                        ind_score += rsi_bias * tf_info['weight']
                 
                 elif ind_key == 'MFI':
                     if last['MFI'] <= 20:
@@ -293,21 +297,38 @@ def render_technical_indicators(data_dict):
                         ind_score -= 1 * tf_info['weight']
                     else:
                         status = "🟡"  # Neutral
+                        # Añadir un pequeño sesgo basado en la dirección del MFI desde el nivel neutral (50)
+                        mfi_bias = ((last['MFI'] - 50) / 30) * tf_info['weight']
+                        ind_score += mfi_bias
                 
                 row[tf_key] = status
             else:
                 row[tf_key] = "⚪"  # No hay datos
+                # No afectamos el score si no hay datos
         
         # Calculamos el score normalizado para este indicador
         max_possible_score = sum([tf_info['weight'] for tf_key, tf_info in TIMEFRAMES.items()])
         normalized_score = (ind_score / max_possible_score) * 100 if max_possible_score > 0 else 0
-        row['Score'] = f"{normalized_score:.1f}"
+        
+        # Guardar el score normalizado redondeado a 1 decimal
+        score_value = round(normalized_score, 1)
+        row['Score'] = f"{score_value}"
+        scores.append(score_value)  # Guardamos el valor numérico para cálculos posteriores
         
         # Añadimos la fila a la tabla
         indicators_df = pd.concat([indicators_df, pd.DataFrame([row])], ignore_index=True)
     
-    # Calculamos el score global
-    global_score = indicators_df['Score'].astype(float).mean()
+    # Calculamos el score global como promedio de los scores individuales
+    if scores:
+        # Calculamos el score global
+        weights = [INDICATORS[ind]['weight'] for ind in INDICATORS]
+        total_weight = sum(weights)
+        
+        # Aplicamos los pesos para dar más importancia a ciertos indicadores
+        weighted_scores = [score * weight for score, weight in zip(scores, weights)]
+        global_score = sum(weighted_scores) / total_weight if total_weight > 0 else 0
+    else:
+        global_score = 0
     
     # Mostramos el score global con un color indicativo
     score_color = PALETTE['green'] if global_score > 0 else PALETTE['red'] if global_score < 0 else PALETTE['neutral']
@@ -319,8 +340,9 @@ def render_technical_indicators(data_dict):
     </div>
     """, unsafe_allow_html=True)
     
-    # Mostramos la tabla de semáforos
-    st.dataframe(indicators_df, use_container_width=True)
+    # Mostramos la tabla de semáforos con formato mejorado
+    # Convertimos a dataframe para mejor visualización y evitamos índice
+    st.dataframe(indicators_df, use_container_width=True, hide_index=True)
 
 def get_watchlist():
     """
@@ -550,6 +572,381 @@ def save_trading_plan(symbol, plan_text):
     with open(plan_path, 'w') as f:
         f.write(plan_text)
 
+def analyze_funding_rate(funding_df):
+    """
+    Analiza el funding rate y genera recomendaciones
+    
+    Args:
+        funding_df: DataFrame con el historial de funding rate
+        
+    Returns:
+        dict: Diccionario con análisis y recomendaciones
+    """
+    if funding_df.empty:
+        return {
+            'status': 'neutral',
+            'trend': 'neutral',
+            'analysis': 'No hay suficientes datos para analizar el funding rate.',
+            'recommendation': 'Esperar a tener más datos para tomar decisiones basadas en funding rate.'
+        }
+    
+    # Calculamos estadísticas del funding rate
+    current = funding_df['fundingRate'].iloc[-1]
+    avg_7d = funding_df['fundingRate'].iloc[-7:].mean() if len(funding_df) >= 7 else current
+    avg_30d = funding_df['fundingRate'].iloc[-30:].mean() if len(funding_df) >= 30 else avg_7d
+    
+    # Determinar si el funding está en niveles extremos
+    is_extreme = abs(current) > 0.001  # Más del 0.1% se considera extremo
+    
+    # Determinar tendencia
+    if len(funding_df) >= 3:
+        last_3 = funding_df['fundingRate'].iloc[-3:].values
+        if last_3[2] > last_3[0]:
+            trend = 'up'
+        elif last_3[2] < last_3[0]:
+            trend = 'down'
+        else:
+            trend = 'neutral'
+    else:
+        trend = 'neutral'
+    
+    # Determinar estatus y análisis
+    if current > 0:
+        status = 'bullish'
+        if is_extreme:
+            analysis = f"Funding rate positivo extremo ({current*100:.4f}%), indicando un fuerte sesgo alcista en el mercado de perpetuos. Los largos están pagando primas significativas a los cortos."
+            recommendation = "Considerar estrategias de hedge o reducción de exposición larga en el corto plazo, posible corrección próxima."
+        else:
+            analysis = f"Funding rate positivo moderado ({current*100:.4f}%), señalando optimismo en el mercado. Los largos están pagando a los cortos, pero en niveles normales."
+            recommendation = "Sesgo alcista prevaleciendo, mantén una postura neutra o ligeramente larga según tu estrategia."
+    elif current < 0:
+        status = 'bearish'
+        if is_extreme:
+            analysis = f"Funding rate negativo extremo ({current*100:.4f}%), indicando un fuerte sesgo bajista en el mercado de perpetuos. Los cortos están pagando primas significativas a los largos."
+            recommendation = "Posible rebote técnico cercano. Considera reducir exposición corta o buscar oportunidades de entrada en largo en soportes."
+        else:
+            analysis = f"Funding rate negativo moderado ({current*100:.4f}%), señalando pesimismo en el mercado. Los cortos están pagando a los largos, pero en niveles normales."
+            recommendation = "Sesgo bajista prevaleciendo, mantén una postura neutra o ligeramente corta según tu estrategia."
+    else:
+        status = 'neutral'
+        analysis = "Funding rate neutral, indicando equilibrio entre posiciones largas y cortas en el mercado de perpetuos."
+        recommendation = "No hay señal clara desde funding rate. Considera otros indicadores para tus decisiones."
+    
+    # Añadir contexto de tendencia
+    if trend == 'up' and status != 'bullish':
+        analysis += " Sin embargo, el funding rate está aumentando recientemente, lo que puede indicar un cambio hacia un sentimiento más alcista."
+    elif trend == 'down' and status != 'bearish':
+        analysis += " Sin embargo, el funding rate está disminuyendo recientemente, lo que puede indicar un cambio hacia un sentimiento más bajista."
+    
+    # Comparar con promedios históricos
+    if abs(current - avg_30d) > abs(avg_30d) * 0.5:  # 50% de desviación del promedio
+        analysis += f" El funding actual está significativamente {'por encima' if current > avg_30d else 'por debajo'} de su promedio de 30 días ({avg_30d*100:.4f}%)."
+        if current > 0 and current > avg_30d:
+            recommendation += " Esta desviación extrema sugiere posible sobrecompra y podría preceder a una corrección."
+        elif current < 0 and current < avg_30d:
+            recommendation += " Esta desviación extrema sugiere posible sobreventa y podría preceder a un rebote."
+    
+    return {
+        'status': status,
+        'trend': trend,
+        'analysis': analysis,
+        'recommendation': recommendation
+    }
+
+def analyze_open_interest(oi_df, price_df):
+    """
+    Analiza el open interest y genera recomendaciones
+    
+    Args:
+        oi_df: DataFrame con el historial de open interest
+        price_df: DataFrame con el historial de precios
+        
+    Returns:
+        dict: Diccionario con análisis y recomendaciones
+    """
+    if oi_df.empty or price_df.empty:
+        return {
+            'status': 'neutral',
+            'trend': 'neutral',
+            'analysis': 'No hay suficientes datos para analizar el open interest.',
+            'recommendation': 'Esperar a tener más datos para tomar decisiones basadas en open interest.'
+        }
+    
+    # Asegurar que tenemos suficientes datos
+    if len(oi_df) < 3 or len(price_df) < 3:
+        return {
+            'status': 'neutral',
+            'trend': 'neutral',
+            'analysis': 'Insuficientes datos históricos para un análisis completo de open interest.',
+            'recommendation': 'Recolectar más datos para mejorar la calidad del análisis.'
+        }
+    
+    # Calculamos estadísticas de OI
+    current_oi = oi_df['openInterest'].iloc[-1]
+    prev_oi = oi_df['openInterest'].iloc[-2]
+    oi_change = ((current_oi / prev_oi) - 1) * 100
+    
+    # Calculamos estadísticas de precio
+    current_price = price_df['Close'].iloc[-1]
+    prev_price = price_df['Close'].iloc[-2]
+    price_change = ((current_price / prev_price) - 1) * 100
+    
+    # Determinar tendencia del OI (últimos 3 intervalos)
+    oi_values = oi_df['openInterest'].iloc[-3:].values
+    if oi_values[2] > oi_values[0]:
+        oi_trend = 'up'
+    elif oi_values[2] < oi_values[0]:
+        oi_trend = 'down'
+    else:
+        oi_trend = 'neutral'
+    
+    # Analizar la relación entre OI y precio
+    if oi_change > 1:  # Aumento significativo del OI
+        if price_change > 0:
+            status = 'bullish'
+            analysis = f"Open Interest incrementando ({oi_change:.2f}%) junto con el precio ({price_change:.2f}%). Esto sugiere nueva liquidez entrando en posiciones largas, fortaleciendo la tendencia alcista."
+            recommendation = "Considerar mantener o aumentar exposición alcista mientras este patrón continúe."
+        else:
+            status = 'bearish'
+            analysis = f"Open Interest incrementando ({oi_change:.2f}%) mientras el precio cae ({price_change:.2f}%). Esto sugiere nueva liquidez entrando en posiciones cortas, fortaleciendo la tendencia bajista."
+            recommendation = "Cautela con posiciones largas. La presión vendedora está aumentando."
+    elif oi_change < -1:  # Disminución significativa del OI
+        if price_change > 0:
+            status = 'mixed'
+            analysis = f"Open Interest disminuyendo ({oi_change:.2f}%) mientras el precio sube ({price_change:.2f}%). Esto sugiere cierre de posiciones cortas (short squeeze) o toma de ganancias en posiciones largas."
+            recommendation = "Posible rebote técnico o alivio de sobreventa. La tendencia alcista podría ser temporal."
+        else:
+            status = 'mixed'
+            analysis = f"Open Interest disminuyendo ({oi_change:.2f}%) junto con el precio ({price_change:.2f}%). Esto sugiere cierre de posiciones largas y posible agotamiento vendedor."
+            recommendation = "Considerar reducir exposición corta en soportes clave. Posible formación de suelo cercana."
+    else:  # OI estable
+        status = 'neutral'
+        analysis = f"Open Interest relativamente estable ({oi_change:.2f}%) con precio {('subiendo' if price_change > 0 else 'bajando')} ({price_change:.2f}%). No hay señales fuertes de nuevas posiciones."
+        recommendation = "Mantener estrategia actual y monitorear cambios en volumen y precio para señales más claras."
+    
+    return {
+        'status': status,
+        'trend': oi_trend,
+        'analysis': analysis,
+        'recommendation': recommendation
+    }
+
+def analyze_order_flow(delta_df, price_df):
+    """
+    Analiza el order flow delta y genera recomendaciones
+    
+    Args:
+        delta_df: DataFrame con delta de órdenes
+        price_df: DataFrame con precios
+        
+    Returns:
+        dict: Diccionario con análisis y recomendaciones
+    """
+    if delta_df.empty or price_df.empty or len(delta_df) < 3:
+        return {
+            'status': 'neutral',
+            'trend': 'neutral',
+            'analysis': 'Datos insuficientes para analizar order flow delta.',
+            'recommendation': 'Recopilar más datos de mercado para un análisis efectivo.'
+        }
+    
+    # Estadísticas clave
+    current_delta = delta_df['delta'].iloc[-1]
+    current_delta_pct = delta_df['delta_percent'].iloc[-1] if 'delta_percent' in delta_df else 0
+    cum_delta = delta_df['cum_delta'].iloc[-1] if 'cum_delta' in delta_df else delta_df['delta'].sum()
+    
+    # Tendencia reciente del delta
+    recent_delta = delta_df['delta'].iloc[-5:].mean() if len(delta_df) >= 5 else delta_df['delta'].mean()
+    
+    # Determinar tendencia
+    delta_values = delta_df['delta'].iloc[-3:].values
+    if delta_values[2] > delta_values[0]:
+        delta_trend = 'improving'  # Mejorando (más compras o menos ventas)
+    elif delta_values[2] < delta_values[0]:
+        delta_trend = 'deteriorating'  # Empeorando (menos compras o más ventas)
+    else:
+        delta_trend = 'neutral'
+    
+    # Análisis básico
+    if current_delta > 0:
+        if current_delta_pct > 10:  # Dominancia compradora fuerte
+            status = 'strongly_bullish'
+            analysis = f"Fuerte dominancia compradora (Delta: {current_delta_pct:.2f}%). Los compradores están siendo significativamente más agresivos que los vendedores."
+            recommendation = "Sesgo alcista fuerte. Considerar entradas largas en retrocesos menores."
+        else:
+            status = 'bullish'
+            analysis = f"Presión compradora moderada (Delta: {current_delta_pct:.2f}%). Hay más volumen de compra que de venta, pero no es dominante."
+            recommendation = "Sesgo alcista presente. Mantener posiciones largas con stops adecuados."
+    elif current_delta < 0:
+        if current_delta_pct < -10:  # Dominancia vendedora fuerte
+            status = 'strongly_bearish'
+            analysis = f"Fuerte dominancia vendedora (Delta: {current_delta_pct:.2f}%). Los vendedores están siendo significativamente más agresivos que los compradores."
+            recommendation = "Sesgo bajista fuerte. Considerar proteger posiciones largas o buscar oportunidades cortas."
+        else:
+            status = 'bearish'
+            analysis = f"Presión vendedora moderada (Delta: {current_delta_pct:.2f}%). Hay más volumen de venta que de compra, pero no es dominante."
+            recommendation = "Sesgo bajista presente. Mantener cautela con posiciones largas."
+    else:
+        status = 'neutral'
+        analysis = "Equilibrio entre compradores y vendedores. No hay presión dominante en el order flow."
+        recommendation = "Sin sesgo claro desde order flow. Buscar confirmación en otros indicadores."
+    
+    # Añadir contexto de delta acumulativo
+    if cum_delta > 0:
+        if status.endswith('bearish'):
+            analysis += f" Sin embargo, el delta acumulativo sigue siendo positivo ({cum_delta:.2f}), lo que sugiere que la presión compradora ha dominado históricamente."
+        else:
+            analysis += f" El delta acumulativo positivo ({cum_delta:.2f}) confirma la presión compradora sostenida."
+    else:
+        if status.endswith('bullish'):
+            analysis += f" Sin embargo, el delta acumulativo sigue siendo negativo ({cum_delta:.2f}), lo que sugiere que la presión vendedora ha dominado históricamente."
+        else:
+            analysis += f" El delta acumulativo negativo ({cum_delta:.2f}) confirma la presión vendedora sostenida."
+    
+    # Analizar divergencia con precio
+    current_price = price_df['Close'].iloc[-1]
+    prev_price = price_df['Close'].iloc[-5] if len(price_df) >= 5 else price_df['Close'].iloc[0]
+    price_change = ((current_price / prev_price) - 1) * 100
+    
+    if (price_change > 2 and recent_delta < 0) or (price_change < -2 and recent_delta > 0):
+        analysis += f" DIVERGENCIA DETECTADA: El precio se mueve {('al alza' if price_change > 0 else 'a la baja')} ({price_change:.2f}%) mientras el order flow sugiere lo contrario."
+        recommendation += " La divergencia entre precio y order flow sugiere posible reversión. Considera reducir exposición y esperar confirmación."
+    
+    return {
+        'status': status,
+        'trend': delta_trend,
+        'analysis': analysis,
+        'recommendation': recommendation
+    }
+
+def render_derivatives_analysis(symbol):
+    """
+    Renderiza un análisis completo de los datos de derivados con las tres métricas juntas
+    
+    Args:
+        symbol: Símbolo de la criptomoneda
+    """
+    st.header('Análisis de Mercados de Derivados')
+    
+    # Obtenemos todos los datos que necesitamos
+    funding_df = get_funding_rate(symbol)
+    oi_interval = '1h'  # Predefino un intervalo para simplificar
+    oi_df = get_open_interest(symbol, oi_interval)
+    price_df = get_data_perp(symbol, oi_interval)
+    delta_df = get_orderflow_delta(symbol, oi_interval)
+    
+    # Ejecutamos los análisis
+    funding_analysis = analyze_funding_rate(funding_df)
+    oi_analysis = analyze_open_interest(oi_df, price_df)
+    flow_analysis = analyze_order_flow(delta_df, price_df)
+    
+    # 1. Tablero de resumen con las tres métricas
+    col1, col2, col3 = st.columns(3)
+    
+    with col1:
+        funding_color = PALETTE['green'] if funding_analysis['status'] == 'bullish' else PALETTE['red'] if funding_analysis['status'] == 'bearish' else PALETTE['neutral']
+        st.markdown(f"""
+        <div style="border:1px solid {funding_color}; border-radius:5px; padding:10px;">
+            <h3 style="text-align:center;">Funding Rate</h3>
+            <p style="color:{funding_color}; font-weight:bold; text-align:center;">
+                {funding_df['fundingRate'].iloc[-1]*100:.4f}% 
+                {' ▲' if funding_analysis['trend'] == 'up' else ' ▼' if funding_analysis['trend'] == 'down' else ''}
+            </p>
+            <h4>Análisis:</h4>
+            <p>{funding_analysis['analysis']}</p>
+            <h4>Recomendación:</h4>
+            <p>{funding_analysis['recommendation']}</p>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    with col2:
+        oi_color = PALETTE['green'] if oi_analysis['status'] == 'bullish' else PALETTE['red'] if oi_analysis['status'] == 'bearish' else PALETTE['neutral']
+        oi_change = ((oi_df['openInterest'].iloc[-1] / oi_df['openInterest'].iloc[-2]) - 1) * 100 if not oi_df.empty and len(oi_df) > 1 else 0
+        st.markdown(f"""
+        <div style="border:1px solid {oi_color}; border-radius:5px; padding:10px;">
+            <h3 style="text-align:center;">Open Interest</h3>
+            <p style="color:{oi_color}; font-weight:bold; text-align:center;">
+                {oi_change:.2f}% 
+                {' ▲' if oi_analysis['trend'] == 'up' else ' ▼' if oi_analysis['trend'] == 'down' else ''}
+            </p>
+            <h4>Análisis:</h4>
+            <p>{oi_analysis['analysis']}</p>
+            <h4>Recomendación:</h4>
+            <p>{oi_analysis['recommendation']}</p>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    with col3:
+        flow_color = PALETTE['green'] if flow_analysis['status'] in ['bullish', 'strongly_bullish'] else PALETTE['red'] if flow_analysis['status'] in ['bearish', 'strongly_bearish'] else PALETTE['neutral']
+        current_delta_pct = delta_df['delta_percent'].iloc[-1] if not delta_df.empty and 'delta_percent' in delta_df else 0
+        st.markdown(f"""
+        <div style="border:1px solid {flow_color}; border-radius:5px; padding:10px;">
+            <h3 style="text-align:center;">Order Flow</h3>
+            <p style="color:{flow_color}; font-weight:bold; text-align:center;">
+                {current_delta_pct:.2f}% 
+                {' ▲' if flow_analysis['trend'] == 'improving' else ' ▼' if flow_analysis['trend'] == 'deteriorating' else ''}
+            </p>
+            <h4>Análisis:</h4>
+            <p>{flow_analysis['analysis']}</p>
+            <h4>Recomendación:</h4>
+            <p>{flow_analysis['recommendation']}</p>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    # 2. Análisis integrado y conclusión general
+    overall_bullish = sum([1 if a['status'] in ['bullish', 'strongly_bullish'] else 0 for a in [funding_analysis, oi_analysis, flow_analysis]])
+    overall_bearish = sum([1 if a['status'] in ['bearish', 'strongly_bearish'] else 0 for a in [funding_analysis, oi_analysis, flow_analysis]])
+    
+    if overall_bullish > overall_bearish:
+        overall_status = "bullish"
+        overall_color = PALETTE['green']
+        if overall_bullish == 3:
+            overall_strength = "fuerte"
+            overall_message = "Los tres indicadores de derivados muestran un sesgo alcista claro. Alta probabilidad de continuación de tendencia alcista."
+        else:
+            overall_strength = "moderado"
+            overall_message = f"Mayoría de indicadores ({overall_bullish}/3) muestran sesgo alcista. Considerar posiciones largas con gestión adecuada de riesgo."
+    elif overall_bearish > overall_bullish:
+        overall_status = "bearish"
+        overall_color = PALETTE['red']
+        if overall_bearish == 3:
+            overall_strength = "fuerte"
+            overall_message = "Los tres indicadores de derivados muestran un sesgo bajista claro. Alta probabilidad de continuación de tendencia bajista."
+        else:
+            overall_strength = "moderado"
+            overall_message = f"Mayoría de indicadores ({overall_bearish}/3) muestran sesgo bajista. Cautela con posiciones largas; considerar estrategias de protección."
+    else:
+        overall_status = "neutral"
+        overall_color = PALETTE['neutral']
+        overall_strength = "mixto"
+        overall_message = "Señales mixtas de los indicadores de derivados. No hay un sesgo claro; enfócate en niveles técnicos y catalistas fundamentales."
+    
+    st.markdown(f"""
+    <div style="border:2px solid {overall_color}; border-radius:5px; padding:15px; margin-top:20px;">
+        <h3 style="text-align:center;">Conclusión del Análisis de Derivados</h3>
+        <p style="font-size:18px; text-align:center; color:{overall_color};">
+            Sesgo {overall_status.upper()} {overall_strength}
+        </p>
+        <p style="font-size:16px;">{overall_message}</p>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    # 3. Gráficos integrados (opcional)
+    with st.expander("Ver gráficos detallados de derivados"):
+        # Aquí podríamos mostrar los gráficos de cada métrica
+        st.subheader("Funding Rate")
+        from tabs.analysis_tab import plot_funding
+        funding_fig = plot_funding(funding_df)
+        st.plotly_chart(funding_fig, use_container_width=True)
+        
+        st.subheader("Open Interest vs Precio")
+        oi_fig = plot_open_interest(oi_df, price_df)
+        st.plotly_chart(oi_fig, use_container_width=True)
+        
+        st.subheader("Order Flow Delta")
+        delta_fig = plot_delta(delta_df, price_df)
+        st.plotly_chart(delta_fig, use_container_width=True)
+
 def render_improved_analysis():
     """
     Renderiza la interfaz mejorada del centro de mando diario
@@ -668,30 +1065,5 @@ def render_improved_analysis():
                 </div>
                 """, unsafe_allow_html=True)
     
-    # 4. Métricas de derivados (similar al análisis original)
-    st.header('Métricas de Mercados de Derivados')
-    
-    # Crear una sección con tabs para cada métrica de derivados
-    derivative_tabs = st.tabs(["Funding Rate", "Open Interest", "Order Flow Delta"])
-    
-    # Tab 1: Funding Rate
-    with derivative_tabs[0]:
-        funding_df = get_funding_rate(main_symbol)
-        from tabs.analysis_tab import plot_funding
-        funding_fig = plot_funding(funding_df)
-        st.plotly_chart(funding_fig, use_container_width=True)
-    
-    # Tab 2: Open Interest
-    with derivative_tabs[1]:
-        oi_interval = st.selectbox('Select Open Interest Interval', ['5m', '15m', '1h', '4h', '1d'], index=2)
-        oi_df = get_open_interest(main_symbol, oi_interval)
-        price_df = get_data_perp(main_symbol, oi_interval)
-        oi_fig = plot_open_interest(oi_df, price_df)
-        st.plotly_chart(oi_fig, use_container_width=True)
-    
-    # Tab 3: Order Flow Delta
-    with derivative_tabs[2]:
-        delta_interval = st.selectbox('Select Order Flow Delta Interval', ['1m', '5m', '15m', '30m', '1h', '4h', '1d'], index=4)
-        delta_df = get_orderflow_delta(main_symbol, delta_interval)
-        delta_fig = plot_delta(delta_df, price_df)
-        st.plotly_chart(delta_fig, use_container_width=True)
+    # 4. Métricas de derivados (versión mejorada con análisis)
+    render_derivatives_analysis(main_symbol)
