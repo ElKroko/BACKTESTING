@@ -145,18 +145,18 @@ def render_backtests():
                unsafe_allow_html=True)
     
     # Inicializar variables de estado en session_state si no existen
-    if 'bt_metrics' not in st.session_state:
-        st.session_state.bt_metrics = {}
-    if 'bt_trades_df' not in st.session_state:
-        st.session_state.bt_trades_df = pd.DataFrame()
-    if 'bt_eq_df' not in st.session_state:
-        st.session_state.bt_eq_df = pd.DataFrame()
-    if 'bt_price_df' not in st.session_state:
-        st.session_state.bt_price_df = pd.DataFrame()
-    if 'bt_last_run' not in st.session_state:
-        st.session_state.bt_last_run = False
-    if 'bt_summary' not in st.session_state:
-        st.session_state.bt_summary = {
+    if 'legacy_bt_metrics' not in st.session_state:
+        st.session_state.legacy_bt_metrics = {}
+    if 'legacy_bt_trades_df' not in st.session_state:
+        st.session_state.legacy_bt_trades_df = pd.DataFrame()
+    if 'legacy_bt_eq_df' not in st.session_state:
+        st.session_state.legacy_bt_eq_df = pd.DataFrame()
+    if 'legacy_bt_price_df' not in st.session_state:
+        st.session_state.legacy_bt_price_df = pd.DataFrame()
+    if 'legacy_bt_last_run' not in st.session_state:
+        st.session_state.legacy_bt_last_run = False
+    if 'legacy_bt_summary' not in st.session_state:
+        st.session_state.legacy_bt_summary = {
             'symbol': 'BTCUSDT',
             'interval': '1m',
             'strategy': 'MA Crossover',
@@ -172,31 +172,31 @@ def render_backtests():
     default_start = today - timedelta(days=30)
 
     # Form más compacto usando expander
-    with st.expander("Backtest Settings", expanded=not st.session_state.bt_last_run):
+    with st.expander("Backtest Settings", expanded=not st.session_state.legacy_bt_last_run):
         # Formulario compacto en 3 columnas para ocupar menos espacio
-        form = st.form('backtest_form', clear_on_submit=False)
+        form = st.form('legacy_backtest_form', clear_on_submit=False)
         col1, col2, col3 = form.columns(3)
         
         with col1:
-            symbol = st.text_input('Symbol', value='BTCUSDT', key='bt_symbol').strip().upper()
-            interval = st.selectbox('Timeframe', options=['1m','5m','15m','1h','4h','1d'], key='bt_interval')
+            symbol = st.text_input('Symbol', value='BTCUSDT', key='legacy_bt_symbol').strip().upper()
+            interval = st.selectbox('Timeframe', options=['1m','5m','15m','1h','4h','1d'], key='legacy_bt_interval')
             strategy_name = st.selectbox('Strategy', 
                                        options=['MA Crossover','Bollinger Breakout','RSI Reversion',
                                                'MACD Momentum','SR Breakout'],
-                                       key='bt_strategy',
+                                       key='legacy_bt_strategy',
                                        help="MA Crossover: Cruces de medias móviles. Bollinger: Ruptura de bandas. RSI: Sobrecompra/sobreventa. MACD: Momentum. SR: Soporte/Resistencia.")
         
         with col2:
-            start_date = st.date_input('Start Date', value=default_start, key='bt_start')
-            end_date = st.date_input('End Date', value=today, key='bt_end')
+            start_date = st.date_input('Start Date', value=default_start, key='legacy_bt_start')
+            end_date = st.date_input('End Date', value=today, key='legacy_bt_end')
         
         with col3:
             initial_cash = st.number_input('Initial Capital (USD)', 
-                                         min_value=100.0, value=10000.0, step=100.0, key='bt_cash')
+                                         min_value=100.0, value=10000.0, step=100.0, key='legacy_bt_cash')
             commission = st.number_input('Commission (%)', 
-                                       min_value=0.0, max_value=1.0, value=0.1, step=0.01, key='bt_commission')
+                                       min_value=0.0, max_value=1.0, value=0.1, step=0.01, key='legacy_bt_commission')
             slippage = st.number_input('Slippage (%)', 
-                                     min_value=0.0, max_value=1.0, value=0.05, step=0.01, key='bt_slippage')
+                                     min_value=0.0, max_value=1.0, value=0.05, step=0.01, key='legacy_bt_slippage')
         
         run = form.form_submit_button('Run Backtest')
 
@@ -218,14 +218,14 @@ def render_backtests():
         )
         
         # Guardar resultados en session_state
-        st.session_state.bt_metrics = metrics
-        st.session_state.bt_trades_df = trades_df
-        st.session_state.bt_eq_df = eq_df
-        st.session_state.bt_price_df = price_df
-        st.session_state.bt_last_run = True
+        st.session_state.legacy_bt_metrics = metrics
+        st.session_state.legacy_bt_trades_df = trades_df
+        st.session_state.legacy_bt_eq_df = eq_df
+        st.session_state.legacy_bt_price_df = price_df
+        st.session_state.legacy_bt_last_run = True
         
         # Actualizar el resumen
-        st.session_state.bt_summary = {
+        st.session_state.legacy_bt_summary = {
             'symbol': symbol,
             'interval': interval,
             'strategy': strategy_name,
@@ -237,7 +237,7 @@ def render_backtests():
         }
     
     # Si aún no se ha ejecutado ningún backtest, ejecutar uno con valores predeterminados
-    if not st.session_state.bt_last_run:
+    if not st.session_state.legacy_bt_last_run:
         strategy_fn = ma_crossover  # Estrategia predeterminada
         metrics, trades_df, eq_df, price_df = run_backtest(
             'BTCUSDT', '1m', strategy_fn,
@@ -246,17 +246,17 @@ def render_backtests():
         )
         
         # Guardar resultados en session_state
-        st.session_state.bt_metrics = metrics
-        st.session_state.bt_trades_df = trades_df
-        st.session_state.bt_eq_df = eq_df
-        st.session_state.bt_price_df = price_df
-        st.session_state.bt_last_run = True
+        st.session_state.legacy_bt_metrics = metrics
+        st.session_state.legacy_bt_trades_df = trades_df
+        st.session_state.legacy_bt_eq_df = eq_df
+        st.session_state.legacy_bt_price_df = price_df
+        st.session_state.legacy_bt_last_run = True
     
     # Obtener la paleta actual desde config
     current_palette = config.PALETTE
     
     # Mostrar resumen del backtest usando la función de utilidad
-    summary = st.session_state.bt_summary
+    summary = st.session_state.legacy_bt_summary
     summary_html = format_backtest_summary(summary, current_palette)
     st.markdown(summary_html, unsafe_allow_html=True)
     
@@ -269,8 +269,8 @@ def render_backtests():
                            'La curva de capital muestra la evolución de tu inversión a lo largo del tiempo. Una curva ascendente indica rentabilidad, mientras que las caídas representan pérdidas.'),
                   unsafe_allow_html=True)
         
-        if not st.session_state.bt_eq_df.empty:
-            df_plot = st.session_state.bt_eq_df.reset_index()
+        if not st.session_state.legacy_bt_eq_df.empty:
+            df_plot = st.session_state.legacy_bt_eq_df.reset_index()
             if 'timestamp' not in df_plot.columns and 'index' in df_plot.columns:
                 df_plot = df_plot.rename(columns={'index': 'timestamp'})
             
@@ -305,7 +305,7 @@ def render_backtests():
         
         # Metrics
         mcols = st.columns(4)
-        for i, (name, val) in enumerate(st.session_state.bt_metrics.items()):
+        for i, (name, val) in enumerate(st.session_state.legacy_bt_metrics.items()):
             mcols[i % 4].metric(name, val)
         
 
@@ -314,24 +314,24 @@ def render_backtests():
                            'Gráfico de precios con marcadores que indican los puntos de entrada y salida de tus operaciones. Te permite visualizar cuándo tu estrategia entró y salió del mercado.'),
                    unsafe_allow_html=True)
         
-        if not st.session_state.bt_price_df.empty:
+        if not st.session_state.legacy_bt_price_df.empty:
             fig_price = go.Figure(
                 data=[
                     go.Candlestick(
-                        x=st.session_state.bt_price_df.index,
-                        open=st.session_state.bt_price_df['Open'], 
-                        high=st.session_state.bt_price_df['High'],
-                        low=st.session_state.bt_price_df['Low'], 
-                        close=st.session_state.bt_price_df['Close'],
+                        x=st.session_state.legacy_bt_price_df.index,
+                        open=st.session_state.legacy_bt_price_df['Open'], 
+                        high=st.session_state.legacy_bt_price_df['High'],
+                        low=st.session_state.legacy_bt_price_df['Low'], 
+                        close=st.session_state.legacy_bt_price_df['Close'],
                         name='Price'
                     )
                 ]
             )
-            if not st.session_state.bt_trades_df.empty:
+            if not st.session_state.legacy_bt_trades_df.empty:
                 fig_price.add_trace(
                     go.Scatter(
-                        x=st.session_state.bt_trades_df['Entry Time'], 
-                        y=st.session_state.bt_trades_df['Entry Price'],
+                        x=st.session_state.legacy_bt_trades_df['Entry Time'], 
+                        y=st.session_state.legacy_bt_trades_df['Entry Price'],
                         mode='markers', 
                         marker=dict(color=current_palette['entries'], symbol='triangle-up', size=10),
                         name='Entries'
@@ -339,8 +339,8 @@ def render_backtests():
                 )
                 fig_price.add_trace(
                     go.Scatter(
-                        x=st.session_state.bt_trades_df['Exit Time'], 
-                        y=st.session_state.bt_trades_df['Exit Price'],
+                        x=st.session_state.legacy_bt_trades_df['Exit Time'], 
+                        y=st.session_state.legacy_bt_trades_df['Exit Price'],
                         mode='markers', 
                         marker=dict(color=current_palette['exits'], symbol='triangle-down', size=10),
                         name='Exits'
@@ -370,7 +370,7 @@ def render_backtests():
                            'Tabla detallada de todas las operaciones realizadas. Incluye precios de entrada y salida, resultado (PnL - Profit and Loss) y fechas de cada operación.'),
                    unsafe_allow_html=True)
         
-        if not st.session_state.bt_trades_df.empty:
-            st.dataframe(st.session_state.bt_trades_df)
+        if not st.session_state.legacy_bt_trades_df.empty:
+            st.dataframe(st.session_state.legacy_bt_trades_df)
         else:
             st.info('No trades executed in this period.')

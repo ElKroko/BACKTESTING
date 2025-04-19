@@ -534,20 +534,20 @@ def render_leveraged_backtest(tooltip_func=None):
                 unsafe_allow_html=True)
     
     # Initialize session state variables if they don't exist
-    if 'lev_metrics' not in st.session_state:
-        st.session_state.lev_metrics = {}
-    if 'lev_trades_df' not in st.session_state:
-        st.session_state.lev_trades_df = pd.DataFrame()
-    if 'lev_eq_df' not in st.session_state:
-        st.session_state.lev_eq_df = pd.DataFrame()
-    if 'lev_price_df' not in st.session_state:
-        st.session_state.lev_price_df = pd.DataFrame()
-    if 'lev_funding_df' not in st.session_state:
-        st.session_state.lev_funding_df = pd.DataFrame()
-    if 'lev_last_run' not in st.session_state:
-        st.session_state.lev_last_run = False
-    if 'lev_summary' not in st.session_state:
-        st.session_state.lev_summary = {
+    if 'legacy_lev_metrics' not in st.session_state:
+        st.session_state.legacy_lev_metrics = {}
+    if 'legacy_lev_trades_df' not in st.session_state:
+        st.session_state.legacy_lev_trades_df = pd.DataFrame()
+    if 'legacy_lev_eq_df' not in st.session_state:
+        st.session_state.legacy_lev_eq_df = pd.DataFrame()
+    if 'legacy_lev_price_df' not in st.session_state:
+        st.session_state.legacy_lev_price_df = pd.DataFrame()
+    if 'legacy_lev_funding_df' not in st.session_state:
+        st.session_state.legacy_lev_funding_df = pd.DataFrame()
+    if 'legacy_lev_last_run' not in st.session_state:
+        st.session_state.legacy_lev_last_run = False
+    if 'legacy_lev_summary' not in st.session_state:
+        st.session_state.legacy_lev_summary = {
             'symbol': 'BTCUSDT',
             'interval': '1h',
             'strategy': 'MA Crossover',
@@ -565,30 +565,30 @@ def render_leveraged_backtest(tooltip_func=None):
     default_start = today - timedelta(days=30)
     
     # Settings form in a collapsible section
-    with st.expander("Leveraged Backtest Settings", expanded=not st.session_state.lev_last_run):
+    with st.expander("Leveraged Backtest Settings", expanded=not st.session_state.legacy_lev_last_run):
         # Use a form for more compact UI
-        form = st.form('leveraged_backtest_form', clear_on_submit=False)
+        form = st.form('legacy_leveraged_backtest_form', clear_on_submit=False)
         col1, col2, col3 = form.columns(3)
         
         with col1:
-            symbol = st.text_input('Symbol', value='BTCUSDT', key='lev_symbol').strip().upper()
-            interval = st.selectbox('Timeframe', options=['1m','5m','15m','1h','4h','1d'], key='lev_interval')
+            symbol = st.text_input('Symbol', value='BTCUSDT', key='legacy_lev_symbol').strip().upper()
+            interval = st.selectbox('Timeframe', options=['1m','5m','15m','1h','4h','1d'], key='legacy_lev_interval')
             strategy_name = st.selectbox('Strategy', 
                                        options=['MA Crossover','Bollinger Breakout','RSI Reversion',
                                                'MACD Momentum','SR Breakout'],
-                                       key='lev_strategy',
+                                       key='legacy_lev_strategy',
                                        help="MA Crossover: Cruces de medias móviles. Bollinger: Ruptura de bandas. RSI: Sobrecompra/sobreventa. MACD: Momentum. SR: Soporte/Resistencia.")
         
         with col2:
-            start_date = st.date_input('Start Date', value=default_start, key='lev_start')
-            end_date = st.date_input('End Date', value=today, key='lev_end')
-            initial_cash = st.number_input('Initial Capital (USD)', min_value=100.0, value=10000.0, step=100.0, key='lev_cash')
+            start_date = st.date_input('Start Date', value=default_start, key='legacy_lev_start')
+            end_date = st.date_input('End Date', value=today, key='legacy_lev_end')
+            initial_cash = st.number_input('Initial Capital (USD)', min_value=100.0, value=10000.0, step=100.0, key='legacy_lev_cash')
         
         with col3:
-            leverage = st.slider('Leverage', min_value=1, max_value=100, value=3, step=1, key='lev_leverage')
-            maintenance_margin = st.slider('Maintenance Margin (%)', min_value=0.1, max_value=5.0, value=0.5, step=0.1, key='lev_maintenance')
-            commission = st.number_input('Commission (%)', min_value=0.0, max_value=1.0, value=0.1, step=0.01, key='lev_commission')
-            slippage = st.number_input('Slippage (%)', min_value=0.0, max_value=1.0, value=0.05, step=0.01, key='lev_slippage')
+            leverage = st.slider('Leverage', min_value=1, max_value=100, value=3, step=1, key='legacy_lev_leverage')
+            maintenance_margin = st.slider('Maintenance Margin (%)', min_value=0.1, max_value=5.0, value=0.5, step=0.1, key='legacy_lev_maintenance')
+            commission = st.number_input('Commission (%)', min_value=0.0, max_value=1.0, value=0.1, step=0.01, key='legacy_lev_commission')
+            slippage = st.number_input('Slippage (%)', min_value=0.0, max_value=1.0, value=0.05, step=0.01, key='legacy_lev_slippage')
         
         run = form.form_submit_button('Run Leveraged Backtest')
     
@@ -616,15 +616,15 @@ def render_leveraged_backtest(tooltip_func=None):
             )
         
         # Store results in session state
-        st.session_state.lev_metrics = metrics
-        st.session_state.lev_trades_df = trades_df
-        st.session_state.lev_eq_df = eq_df
-        st.session_state.lev_price_df = price_df
-        st.session_state.lev_funding_df = funding_df
-        st.session_state.lev_last_run = True
+        st.session_state.legacy_lev_metrics = metrics
+        st.session_state.legacy_lev_trades_df = trades_df
+        st.session_state.legacy_lev_eq_df = eq_df
+        st.session_state.legacy_lev_price_df = price_df
+        st.session_state.legacy_lev_funding_df = funding_df
+        st.session_state.legacy_lev_last_run = True
         
         # Update summary info
-        st.session_state.lev_summary = {
+        st.session_state.legacy_lev_summary = {
             'symbol': symbol,
             'interval': interval,
             'strategy': strategy_name,
@@ -638,7 +638,7 @@ def render_leveraged_backtest(tooltip_func=None):
         }
     
     # If no backtest has been run yet, run a default one
-    if not st.session_state.lev_last_run:
+    if not st.session_state.legacy_lev_last_run:
         # Map strategy names to functions
         strategy_fn = ma_crossover  # Default strategy
         
@@ -652,18 +652,18 @@ def render_leveraged_backtest(tooltip_func=None):
             )
         
         # Store results in session state
-        st.session_state.lev_metrics = metrics
-        st.session_state.lev_trades_df = trades_df
-        st.session_state.lev_eq_df = eq_df
-        st.session_state.lev_price_df = price_df
-        st.session_state.lev_funding_df = funding_df
-        st.session_state.lev_last_run = True
+        st.session_state.legacy_lev_metrics = metrics
+        st.session_state.legacy_lev_trades_df = trades_df
+        st.session_state.legacy_lev_eq_df = eq_df
+        st.session_state.legacy_lev_price_df = price_df
+        st.session_state.legacy_lev_funding_df = funding_df
+        st.session_state.legacy_lev_last_run = True
     
     # Get current color palette
     current_palette = config.PALETTE
     
     # Mostrar resumen del backtest usando la función de utilidad
-    summary = st.session_state.lev_summary
+    summary = st.session_state.legacy_lev_summary
     summary_html = format_backtest_summary(summary, current_palette)
     st.markdown(summary_html, unsafe_allow_html=True)
     
@@ -677,17 +677,17 @@ def render_leveraged_backtest(tooltip_func=None):
         
         # Display metrics in a grid
         mcols = st.columns(3)
-        for i, (name, val) in enumerate(st.session_state.lev_metrics.items()):
+        for i, (name, val) in enumerate(st.session_state.legacy_lev_metrics.items()):
             mcols[i % 3].metric(name, val)
         
         # Display funding impacts table if available
-        if not st.session_state.lev_funding_df.empty:
+        if not st.session_state.legacy_lev_funding_df.empty:
             st.markdown(tooltip('💰 Funding Impacts', 
                                'Resumen de los pagos de funding rate. Los mercados de futuros perpetuos utilizan pagos periódicos (funding) para mantener el precio del contrato cerca del mercado spot.'), 
                        unsafe_allow_html=True)
             
             # Group funding by day and position type for summary
-            funding_summary = st.session_state.lev_funding_df.copy()
+            funding_summary = st.session_state.legacy_lev_funding_df.copy()
             if 'timestamp' in funding_summary.columns:
                 funding_summary['day'] = funding_summary['timestamp'].dt.date
                 daily_funding = funding_summary.groupby(['day', 'position'])['payment'].sum().reset_index()
@@ -703,8 +703,8 @@ def render_leveraged_backtest(tooltip_func=None):
                            'Gráfico que muestra la evolución de tu capital a lo largo del tiempo. Una curva ascendente indica rentabilidad, mientras que las caídas representan pérdidas.'), 
                    unsafe_allow_html=True)
         
-        if not st.session_state.lev_eq_df.empty:
-            eq_df = st.session_state.lev_eq_df.reset_index()
+        if not st.session_state.legacy_lev_eq_df.empty:
+            eq_df = st.session_state.legacy_lev_eq_df.reset_index()
             
             # Create equity curve chart with funding payment markers
             fig_eq = px.line(
@@ -715,8 +715,8 @@ def render_leveraged_backtest(tooltip_func=None):
             )
             
             # Add funding payments as markers if available
-            if not st.session_state.lev_funding_df.empty:
-                funding_df = st.session_state.lev_funding_df
+            if not st.session_state.legacy_lev_funding_df.empty:
+                funding_df = st.session_state.legacy_lev_funding_df
                 if 'timestamp' in funding_df.columns:
                     # Merge with equity curve to get corresponding equity values
                     funding_with_equity = pd.merge_asof(
@@ -788,25 +788,25 @@ def render_leveraged_backtest(tooltip_func=None):
                    unsafe_allow_html=True)
         
         # Create price chart with trades and liquidation levels
-        if not st.session_state.lev_price_df.empty:
+        if not st.session_state.legacy_lev_price_df.empty:
             fig_price = go.Figure(
                 data=[
                     go.Candlestick(
-                        x=st.session_state.lev_price_df.index,
-                        open=st.session_state.lev_price_df['Open'],
-                        high=st.session_state.lev_price_df['High'],
-                        low=st.session_state.lev_price_df['Low'],
-                        close=st.session_state.lev_price_df['Close'],
+                        x=st.session_state.legacy_lev_price_df.index,
+                        open=st.session_state.legacy_lev_price_df['Open'],
+                        high=st.session_state.legacy_lev_price_df['High'],
+                        low=st.session_state.legacy_lev_price_df['Low'],
+                        close=st.session_state.legacy_lev_price_df['Close'],
                         name='Price'
                     )
                 ]
             )
             
             # Add trade entries and exits
-            if not st.session_state.lev_trades_df.empty:
+            if not st.session_state.legacy_lev_trades_df.empty:
                 # Long entries (buys)
-                long_entries = st.session_state.lev_trades_df[
-                    (st.session_state.lev_trades_df['Position'] == 'Long')
+                long_entries = st.session_state.legacy_lev_trades_df[
+                    (st.session_state.legacy_lev_trades_df['Position'] == 'Long')
                 ]
                 if not long_entries.empty:
                     fig_price.add_trace(
@@ -840,8 +840,8 @@ def render_leveraged_backtest(tooltip_func=None):
                     )
                 
                 # Short entries (sells)
-                short_entries = st.session_state.lev_trades_df[
-                    (st.session_state.lev_trades_df['Position'] == 'Short')
+                short_entries = st.session_state.legacy_lev_trades_df[
+                    (st.session_state.legacy_lev_trades_df['Position'] == 'Short')
                 ]
                 if not short_entries.empty:
                     fig_price.add_trace(
@@ -875,8 +875,8 @@ def render_leveraged_backtest(tooltip_func=None):
                     )
                 
                 # Liquidations
-                liquidations = st.session_state.lev_trades_df[
-                    st.session_state.lev_trades_df['Liquidated'] == True
+                liquidations = st.session_state.legacy_lev_trades_df[
+                    st.session_state.legacy_lev_trades_df['Liquidated'] == True
                 ]
                 if not liquidations.empty:
                     fig_price.add_trace(
@@ -895,8 +895,8 @@ def render_leveraged_backtest(tooltip_func=None):
                     )
             
             # Add liquidation price lines from equity curve
-            if not st.session_state.lev_eq_df.empty and 'liquidation_price' in st.session_state.lev_eq_df.columns:
-                liq_df = st.session_state.lev_eq_df.reset_index()
+            if not st.session_state.legacy_lev_eq_df.empty and 'liquidation_price' in st.session_state.legacy_lev_eq_df.columns:
+                liq_df = st.session_state.legacy_lev_eq_df.reset_index()
                 
                 # Filter to only rows with liquidation prices
                 liq_df = liq_df[liq_df['liquidation_price'].notnull()]
@@ -949,9 +949,9 @@ def render_leveraged_backtest(tooltip_func=None):
                            'Tabla detallada de todas las operaciones realizadas. Incluye precios de entrada y salida, tipo de posición, apalancamiento usado, resultado (PnL) y si hubo liquidación.'), 
                    unsafe_allow_html=True)
         
-        if not st.session_state.lev_trades_df.empty:
+        if not st.session_state.legacy_lev_trades_df.empty:
             # Add highlight for liquidated trades
-            st.dataframe(st.session_state.lev_trades_df.style.apply(
+            st.dataframe(st.session_state.legacy_lev_trades_df.style.apply(
                 lambda row: ['background-color: rgba(255,0,0,0.2)' if row['Liquidated'] else '' 
                            for _ in row], axis=1
             ), use_container_width=True)

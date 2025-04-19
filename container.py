@@ -15,6 +15,8 @@ from tabs.improved_analysis_tab import render_improved_analysis
 from tabs.smartmoney_tab import render_smart_money
 from tabs.backtest_tab import render_backtests
 from tabs.leveraged_backtest import render_leveraged_backtest
+# Importar la nueva vista unificada de backtesting
+from tabs.unified_backtest_tab import render_unified_backtest
 
 # Importamos las utilidades desde sus nuevas ubicaciones
 from utils.html_utils import tooltip, apply_tooltip_css, apply_theme_css, apply_backtest_summary_css
@@ -48,8 +50,9 @@ apply_backtest_summary_css()
 # --- Main tabs ---
 tabs = st.tabs([
     '📊 Centro de Mando',
-    '🔄 Backtests',
-    '📈 Leveraged Backtests',
+    '🔄 Unified Backtests',
+    '🔄 Backtests (Legacy)',
+    '📈 Leveraged Backtests (Legacy)',
     '💡 Smart Money Concepts'
 ])
 
@@ -57,10 +60,13 @@ with tabs[0]:
     render_improved_analysis()
 
 with tabs[1]:
+    render_unified_backtest()
+
+with tabs[2]:
     render_backtests()
     
-with tabs[2]:
+with tabs[3]:
     render_leveraged_backtest(tooltip_func=tooltip)
 
-with tabs[3]:
+with tabs[4]:
     render_smart_money()
