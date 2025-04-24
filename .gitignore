@@ -12,6 +12,7 @@ Thumbs.db
 # Exclude virtual environments
 venv/
 .env/
+.venv/
 
 # Exclude logs and temporary files
 *.log
@@ -25,3 +26,23 @@ venv/
 # Exclude IDE-specific files
 .vscode/
 .idea/
+
+# Exclude backtest results directories
+data/backtest_results/charts/
+data/backtest_results/equity_curves/
+data/backtest_results/trades/
+data/backtest_results/metrics/
+
+# Exclude backtest result files
+data/backtest_results/*.csv
+data/backtest_results/*.txt
+
+# Keep the directory structure but not the content
+!data/backtest_results/.gitkeep
+!data/backtest_results/charts/.gitkeep
+!data/backtest_results/equity_curves/.gitkeep
+!data/backtest_results/trades/.gitkeep
+!data/backtest_results/metrics/.gitkeep
+
+# Exclude exported PDFs and other large reports
+*.pdf
