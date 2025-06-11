@@ -1,0 +1,10 @@
+symbol,timeframe,strategy,error
+BTC/USDT,1m,Bollinger_Bands,'metrics'
+BTC/USDT,5m,Bollinger_Bands,'metrics'
+BTC/USDT,15m,Bollinger_Bands,'metrics'
+BTC/USDT,1h,Bollinger_Bands,'metrics'
+BTC/USDT,4h,Bollinger_Bands,'metrics'
+BTC/USDT,8h,Bollinger_Bands,'metrics'
+BTC/USDT,12h,Bollinger_Bands,'metrics'
+BTC/USDT,1d,Bollinger_Bands,'metrics'
+BTC/USDT,1w,Bollinger_Bands,'metrics'

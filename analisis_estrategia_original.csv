@@ -1,0 +1,4 @@
+total_trades,winning_trades,losing_trades,win_rate,total_profit,total_return_pct,avg_profit_per_trade,max_profit,max_loss,sharpe_ratio,configuracion,descripcion,timeframe
+0,0,0,0,0,0,0,0,0,0,Original_5min_2020,Tu configuración original exacta,5m
+0,0,0,0,0,0,0,0,0,0,Mejorada_1h_2023,"Misma estrategia, mejor timeframe",1h
+0,0,0,0,0,0,0,0,0,0,Bull_Market_2021,Durante mercado alcista,1h

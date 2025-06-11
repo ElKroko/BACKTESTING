@@ -1,0 +1,13 @@
+{
+  "symbol": "BTC/USDT",
+  "timeframe": "1w",
+  "start_date": "2023-01-01T00:00:00Z",
+  "end_date": "2025-06-11T01:21:00.465542",
+  "actual_start": "2023-01-02T00:00:00",
+  "actual_end": "2025-06-09T00:00:00",
+  "total_candles": 128,
+  "created_at": "2025-06-11T01:21:00.465542",
+  "last_updated": "2025-06-11T01:21:00.465542",
+  "cache_key": "c8b343ad0434b821add9b1e6d33f0447",
+  "file_size_mb": 0
+}

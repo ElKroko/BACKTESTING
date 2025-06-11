@@ -9,3 +9,6 @@ plotly
 numpy
 scipy
 pillow
+ccxt
+pandas_ta
+seaborn
